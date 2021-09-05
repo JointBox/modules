@@ -1,0 +1,286 @@
+package:
+  description: Jointbox Unit
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    log_level:
+      description: "Log level to be applied. See details here: https://esphome.io/components/logger.html#log-levels"
+      default: INFO
+      validator:
+        name: one_of
+        args: [ NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE ]
+    wifi:
+      required: false
+      validator:
+        name: package_params
+        args:
+          ssid:
+            validator: string
+          password:
+            validator: sensitive_string
+    identity:
+      required: true
+      validator:
+        name: package_params
+        args:
+          hostname:
+            required: true
+            validator: hostname
+          friendly_name:
+            required: true
+            validator: string
+          id_prefix:
+            required: true
+            default: ''
+            validator: valid_id_prefix
+          domain_name:
+            required: true
+            default: '.local'
+            validator: domain_name
+          comment:
+            required: false
+            validator: string
+    ota:
+      required: false
+      default: { enable: false }
+      validator:
+        name: package_params
+        args:
+          enable:
+            default: true
+            required: true
+            validator: boolean
+          password:
+            required: true
+            default: '$generate'
+            validator: ensure_api_key
+    api:
+      required: false
+      default: { enable: false }
+      validator:
+        name: package_params
+        args:
+          enable:
+            default: true
+            required: true
+            validator: boolean
+          api_key:
+            required: true
+            default: '$generate'
+            validator: ensure_api_key
+    enable_spi:
+      default: false
+      validator: boolean
+    enable_uart:
+      default: false
+      validator: boolean
+    enable_1wire:
+      default: false
+      validator: boolean
+    time:
+      default: sntp
+      validator:
+        name: one_of
+        args: [ NONE, sntp, hass ]
+    enable_reset_switch:
+      default: true
+      validator: boolean
+    i2c_freq:
+      default: 100kHz
+      validator: frequency
+    timezone:
+      default: Europe/Kiev
+      validator: string
+    ntp_servers:
+      default: ["185.102.185.102", "212.1.104.9", "91.210.190.13"]
+#      validator:
+#        name: ensure_list
+#        args: !!str
+    internal_sensors:
+      default: { }
+      validator:
+        name: package_params
+        args:
+          board_temperature:
+            default: { }
+            validator: optional_sensor
+          vdd_voltage:
+            default: { }
+            validator: optional_sensor
+          vin_voltage:
+            default: { }
+            validator: optional_sensor
+          bat_voltage:
+            default: { }
+            validator: optional_sensor
+          uptime:
+            default: { }
+            validator: optional_sensor
+          wifi_signal:
+            default: { }
+            validator: optional_sensor
+          connection_status:
+            default: { }
+            validator: optional_sensor
+          version:
+            default: { }
+            validator: optional_sensor
+
+  variables:
+    time: '{{ pkg.params.identity.id_prefix }}time0'
+    i2c_bus: '{{ pkg.params.identity.id_prefix }}i2c0'
+    board_temperature: '{{ pkg.params.identity.id_prefix }}board_temperature'
+    vin_voltage: '{{ pkg.params.identity.id_prefix }}vin_voltage'
+    vdd_voltage: '{{ pkg.params.identity.id_prefix }}vdd_voltage'
+    bat_voltage: '{{ pkg.params.identity.id_prefix }}bat_voltage'
+    restart_switch: '{{ pkg.params.identity.id_prefix }}restart_switch'
+    uptime: '{{ pkg.params.identity.id_prefix }}uptime'
+    wifi_signal: '{{ pkg.params.identity.id_prefix }}wifi_signal'
+    connection_status: '{{ pkg.params.identity.id_prefix }}connection_status'
+    version: '{{ pkg.params.identity.id_prefix }}version'
+
+  export: [ time, i2c_bus, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
+            restart_switch, uptime, wifi_signal, connection_status ]
+
+esphome:
+  name: '{{pkg.params.identity.hostname}}'
+  platform: ESP32
+  board: wemos_d1_mini32
+  build_path: './build/{{pkg.params.identity.hostname}}'
+  comment: "{{ pkg.params.identity.comment|default(null) }}"
+  project:
+    name: JointBox Unit
+    version: "v1.0"
+
+
+# I2C Bus
+i2c:
+  id: '{{ var.i2c_bus }}'
+  sda: GPIO4
+  scl: GPIO5
+  scan: True
+  frequency: 200kHz
+
+# Enable logging
+logger:
+  level: "{{pkg.params.log_level|default('INFO')}}"
+
+# Wi-Fi Configuration
+wifi:
+  ssid: '{{pkg.params.wifi.ssid}}'
+  password: '{{pkg.params.wifi.password}}'
+  domain: '{{pkg.params.identity.domain_name}}'
+  fast_connect: true
+
+# NTP Configuration
+time:
+  - ~if: "pkg.params.time == 'sntp'"
+    platform: sntp
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+    servers: "{{ pkg.params.ntp_servers }}"
+  - ~if: "pkg.params.time == 'hass'"
+    platform: homeassistant
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+
+# Enable Over the Air updates
+ota:
+  ~if: "pkg.params.ota.enable"
+  safe_mode: True
+  password: '{{ pkg.params.ota.password }}'
+
+# Enable Home Assistant API
+api:
+  ~if: "pkg.params.api.enable"
+  password: '{{ pkg.params.api.api_key }}'
+  reboot_timeout: 1h
+
+# Dallas
+dallas:
+  - pin: GPIO17
+    id: dallas_internal
+    update_interval: "{{ not pkg.params.internal_sensors.board_temperature.update_interval }}"
+
+switch:
+  - ~if: "pkg.params.enable_reset_switch"
+    platform: restart
+    id: "{{ var.restart_switch }}"
+    name: "{{ pkg.params.identity.friendly_name }} Restart"
+
+# Internal sensors
+sensor:
+  # Board temperature
+  - platform: dallas
+    index: 0
+    dallas_id: dallas_internal
+    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} board temperature"
+    id: "{{ var.board_temperature }}"
+
+  # Voltage
+  - platform: adc
+    pin: GPIO34
+    name: "{{ pkg.params.identity.friendly_name }} VIN voltage"
+    internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
+    id: "{{ var.vin_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  - platform: adc
+    pin: GPIO39
+    name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
+    internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
+    id: "{{ var.vdd_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  - platform: adc
+    pin: GPIO35
+    name: "{{ pkg.params.identity.friendly_name }} BAT voltage"
+    internal: "{{ not pkg.params.internal_sensors.bat_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.bat_voltage.update_interval }}"
+    id: "{{ var.bat_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+
+  # Uptime sensor.
+  - ~if: "pkg.params.internal_sensors.uptime.enable"
+    platform: uptime
+    internal: "{{ not pkg.params.internal_sensors.uptime.expose }}"
+    id: "{{ var.uptime }}"
+    name: "{{ pkg.params.identity.friendly_name }} Uptime"
+    update_interval: "{{ pkg.params.internal_sensors.uptime.update_interval }}"
+    icon: mdi:timer
+
+  # WiFi Signal sensor.
+  - ~if: "pkg.params.internal_sensors.wifi_signal.enable"
+    platform: wifi_signal
+    id: "{{ var.wifi_signal }}"
+    internal: "{{ not pkg.params.internal_sensors.wifi_signal.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} WiFi Signal"
+    update_interval: "{{ pkg.params.internal_sensors.wifi_signal.update_interval }}"
+
+binary_sensor:
+  # Connection status.
+  - ~if: "pkg.params.internal_sensors.connection_status.enable"
+    platform: status
+    id: "{{ var.connection_status }}"
+    internal: "{{ not pkg.params.internal_sensors.connection_status.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} Connection Status"
+
+text_sensor:
+  - ~if: "pkg.params.internal_sensors.version.enable"
+    platform: version
+    internal: "{{ not pkg.params.internal_sensors.version.expose }}"
+    hide_timestamp: false
+    name: "{{ pkg.params.identity.friendly_name }} Build Version"
+    disabled_by_default: "{{ not pkg.params.internal_sensors.version.disabled_by_default }}"
+    id: "{{ var.version }}"
