@@ -39,7 +39,7 @@ output:
     platform: gpio
     id: '{{ var.output_prefix}}{{ loop.index }}'
     pin:
-      mcp23xxx: mcp23017_out0
+      mcp23xxx: "{{ var.hub_id }}"
       number: "{{ loop.index }}"
       mode: OUTPUT
       inverted: false

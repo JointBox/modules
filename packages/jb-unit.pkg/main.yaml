@@ -130,27 +130,28 @@ package:
   variables:
     time: '{{ pkg.params.identity.id_prefix }}time0'
     i2c_bus: '{{ pkg.params.identity.id_prefix }}i2c0'
+    uart_ext: '{{ pkg.params.identity.id_prefix }}uart_ext'
     board_temperature: '{{ pkg.params.identity.id_prefix }}board_temperature'
     vin_voltage: '{{ pkg.params.identity.id_prefix }}vin_voltage'
     vdd_voltage: '{{ pkg.params.identity.id_prefix }}vdd_voltage'
     bat_voltage: '{{ pkg.params.identity.id_prefix }}bat_voltage'
     restart_switch: '{{ pkg.params.identity.id_prefix }}restart_switch'
-    uptime: '{{ pkg.params.identity.id_prefix }}uptime'
-    wifi_signal: '{{ pkg.params.identity.id_prefix }}wifi_signal'
-    connection_status: '{{ pkg.params.identity.id_prefix }}connection_status'
-    version: '{{ pkg.params.identity.id_prefix }}version'
+    uptime: '{{ pkg.params.identity.id_prefix }}uptime_sensor'
+    wifi_signal: '{{ pkg.params.identity.id_prefix }}wifi_signal_sensor'
+    connection_status: '{{ pkg.params.identity.id_prefix }}connection_status_sensor'
+    version: '{{ pkg.params.identity.id_prefix }}version_sensor'
 
   export: [ time, i2c_bus, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
-            restart_switch, uptime, wifi_signal, connection_status ]
+            restart_switch, uptime, wifi_signal, connection_status, uart_ext ]
 
 esphome:
   name: '{{pkg.params.identity.hostname}}'
   platform: ESP32
   board: wemos_d1_mini32
   build_path: './build/{{pkg.params.identity.hostname}}'
-  comment: "{{ pkg.params.identity.comment|default(null) }}"
+#  comment: "{{ pkg.params.identity.comment|default(null) }}"
   project:
-    name: JointBox Unit
+    name: jointbox.unit
     version: "v1.0"
 
 
@@ -161,6 +162,14 @@ i2c:
   scl: GPIO5
   scan: True
   frequency: 200kHz
+
+# UART
+uart:
+  - id: "{{ var.uart_ext }}"
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: 9600
+    stop_bits: 1
 
 # Enable logging
 logger:
@@ -201,7 +210,7 @@ api:
 dallas:
   - pin: GPIO17
     id: dallas_internal
-    update_interval: "{{ not pkg.params.internal_sensors.board_temperature.update_interval }}"
+    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
 
 switch:
   - ~if: "pkg.params.enable_reset_switch"

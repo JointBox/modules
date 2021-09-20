@@ -59,7 +59,7 @@ package:
         internal: "{{ not macro.params.expose }}"
         name: "{{ macro.params.name }}"
         pin:
-          pcf8574: "{{ var.hub_id }}"
+          mcp23xxx: "{{ var.hub_id }}"
           number: "{{ macro.params.input_num }}"
           inverted: true
         on_multi_click:
@@ -105,12 +105,12 @@ package:
         internal: "{{ not macro.params.expose }}"
         name: "{{ macro.params.name }}"
         pin:
-          pcf8574: "{{ var.hub_id }}"
+          mcp23xxx: "{{ var.hub_id }}"
           number: "{{ macro.params.input_num }}"
           inverted: true
         filters:
           - invert:
-          - delayed_on_off: "{{ pkg.params.debounce_interval }}"
+          - delayed_on_off: "{{ pkg.params.timing.debounce_interval }}"
         on_release: # -> on close
           - ~if: "macro.params.on_closed is defined"
             then:
