@@ -75,9 +75,12 @@ package:
     enable_uart:
       default: false
       validator: boolean
-    enable_1wire:
+    enable_dallas:
       default: false
       validator: boolean
+    dallas_update_interval:
+      default: 10min
+      validator: time_period
     time:
       default: sntp
       validator:
@@ -89,6 +92,9 @@ package:
     i2c_freq:
       default: 100kHz
       validator: frequency
+    uart_baudrate:
+      default: 9600
+      validator: integer
     timezone:
       default: Europe/Kiev
       validator: string
@@ -131,6 +137,10 @@ package:
     time: '{{ pkg.params.identity.id_prefix }}time0'
     i2c_bus: '{{ pkg.params.identity.id_prefix }}i2c0'
     uart_ext: '{{ pkg.params.identity.id_prefix }}uart_ext'
+    spi_bus: '{{ pkg.params.identity.id_prefix }}spi0'
+    spi_cs_pin: 'GPIO15'
+    dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
+    dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
     board_temperature: '{{ pkg.params.identity.id_prefix }}board_temperature'
     vin_voltage: '{{ pkg.params.identity.id_prefix }}vin_voltage'
     vdd_voltage: '{{ pkg.params.identity.id_prefix }}vdd_voltage'
@@ -140,8 +150,11 @@ package:
     wifi_signal: '{{ pkg.params.identity.id_prefix }}wifi_signal_sensor'
     connection_status: '{{ pkg.params.identity.id_prefix }}connection_status_sensor'
     version: '{{ pkg.params.identity.id_prefix }}version_sensor'
+    jointbox_device_sensor: '{{ pkg.params.identity.id_prefix }}jointbox_device'
+    jointbox_unit_version: 'MD1M32-G-Z107-V20'
+    jointbox_device_str: 'JB Unit, {{ var.jointbox_unit_version }}'
 
-  export: [ time, i2c_bus, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
+  export: [ time, i2c_bus, spi_bus, spi_cs_pin, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
             restart_switch, uptime, wifi_signal, connection_status, uart_ext ]
 
 esphome:
@@ -165,11 +178,19 @@ i2c:
 
 # UART
 uart:
-  - id: "{{ var.uart_ext }}"
+  - ~if: "pkg.params.enable_uart"
+    id: "{{ var.uart_ext }}"
     rx_pin: GPIO16
     tx_pin: GPIO17
-    baud_rate: 9600
+    baud_rate: "{{ pkg.params.uart_baudrate }}"
     stop_bits: 1
+
+spi:
+  - ~if: "pkg.params.enable_spi"
+    id: "{{ var.spi_bus }}"
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
 
 # Enable logging
 logger:
@@ -208,9 +229,13 @@ api:
 
 # Dallas
 dallas:
-  - pin: GPIO17
-    id: dallas_internal
+  - pin: GPIO2
+    id: "{{ var.dallas_int }}"
     update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
+  - ~if: "pkg.params.enable_dallas"
+    pin: GPIO33
+    id: "{{ var.dallas_ext }}"
+    update_interval: "{{ pkg.params.dallas_update_interval }}"
 
 switch:
   - ~if: "pkg.params.enable_reset_switch"
@@ -223,7 +248,7 @@ sensor:
   # Board temperature
   - platform: dallas
     index: 0
-    dallas_id: dallas_internal
+    dallas_id: "{{ var.dallas_int }}"
     internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
     name: "{{ pkg.params.identity.friendly_name }} board temperature"
     id: "{{ var.board_temperature }}"
@@ -293,3 +318,11 @@ text_sensor:
     name: "{{ pkg.params.identity.friendly_name }} Build Version"
     disabled_by_default: "{{ not pkg.params.internal_sensors.version.disabled_by_default }}"
     id: "{{ var.version }}"
+
+  - platform: template
+    name: "{{ pkg.params.identity.friendly_name }} Jointbox Device"
+    lambda: |-
+      return {"{{ var.jointbox_device_str }}"};
+    update_interval: never
+    disabled_by_default: false
+    id: "{{ var.jointbox_device_sensor }}"
