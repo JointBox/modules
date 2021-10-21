@@ -13,6 +13,12 @@ wifi:
         validator: string
       password:
         validator: sensitive_string
+      hidden:
+        validator: boolean
+        default: false
+      enable:
+        validator: boolean
+        default: true
 identity:
   required: true
   validator:
