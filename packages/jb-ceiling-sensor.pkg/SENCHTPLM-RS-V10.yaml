@@ -1,0 +1,559 @@
+package:
+  description: Jointbox Ceiling Sensor
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    <<: !include ../shared/esp-params.yaml
+    internal_sensors:
+      default: { }
+      validator:
+        name: package_params
+        args:
+          board_temperature:
+            default: { enable: true, expose: true }
+            validator: optional_poling_sensor
+          vdd_voltage:
+            default: { enable: true, expose: false }
+            validator: sensor & optional & polling
+          vin_voltage:
+            default: { enable: true, expose: false }
+            validator: sensor & optional & polling
+          <<: !include ../shared/esp-params-internal-sensors.yaml
+    features:
+      default: { }
+      validator:
+        name: package_params
+        args:
+          motion:
+            default: { enable: true }
+            validator: sensor & optional
+          presence:
+            default: { enable: true }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - name: package_params
+                  args:
+                    cooldown_interval:
+                      default: 10min
+                      validator: time_period
+          illuminance:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - polling
+                - name: package_params
+                  args:
+                    smoothen:
+                      default: true
+                      validator: boolean
+          ir_emitter:
+            default: { enable: false }
+            validator: optional
+          ir_receiver:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - optional
+                - name: package_params
+                  args:
+                    dump:
+                      default: all
+                      validator: string
+          #                      validator:
+          #                        name: Any
+          #                        args: [ string, list ]
+          button1:
+            default: { enable: true, expose: false }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - name: package_params
+                  args:
+                    on_click:
+                      required: false
+                      validator: actions_with_fallback
+                    on_long_press:
+                      required: false
+                      validator: actions_with_fallback
+                    on_double_click:
+                      required: false
+                      validator: actions_with_fallback
+
+          sensor_bme680_bsec:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - name: package_params
+                  args:
+                    sample_rate:
+                      default: lp
+                      validator:
+                        name: one_of
+                        args: [ lp, ulp ]
+                    temperature_offset:
+                      default: 2.9
+                      validator: float_
+                    sensors:
+                      default: { }
+                      validator:
+                        name: package_params
+                        args:
+                          temperature:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          pressure:
+                            default: { enable: false }
+                            validator: optional_sensor
+                          humidity:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          gas_resistance:
+                            default: { enable: false }
+                            validator: optional_sensor
+                          iaq:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          iaq_accuracy:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          co2eq:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          breath_voc_eq:
+                            default: { enable: true }
+                            validator: optional_sensor
+          sensor_bme280:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - polling
+                - name: package_params
+                  args:
+                    sensors:
+                      default: { }
+                      validator:
+                        name: package_params
+                        args:
+                          temperature:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          pressure:
+                            default: { enable: false }
+                            validator: optional_sensor
+                          humidity:
+                            default: { enable: true }
+                            validator: optional_sensor
+          sensor_htu21d:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - sensor
+                - optional
+                - polling
+                - name: package_params
+                  args:
+                    sensors:
+                      default: { }
+                      validator:
+                        name: package_params
+                        args:
+                          temperature:
+                            default: { enable: true }
+                            validator: optional_sensor
+                          humidity:
+                            default: { enable: true }
+                            validator: optional_sensor
+  variables:
+    i2c_bus: "{{ pkg.params.identity.id_prefix }}i2c0"
+    dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
+    dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
+    ir_receiver: '{{ pkg.params.identity.id_prefix}}ir_receiver'
+    ir_emitter: '{{ pkg.params.identity.id_prefix}}ir_emitter'
+    illuminance: '{{ pkg.params.identity.id_prefix}}illuminance'
+    flash_button: '{{ pkg.params.identity.id_prefix}}flash_button'
+    jointbox_device_version: 'SENCHTPLM-RS-V10'
+    jointbox_device_str: 'JB Ceiling Sensor, {{ var.jointbox_device_version }}'
+    <<: !include ../shared/esp-common-sensor-vars.yaml
+    motion_sensor: "{{ pkg.params.identity.id_prefix }}motion_sensor"
+    presence_sensor: "{{ pkg.params.identity.id_prefix }}presence_sensor"
+    sensor_bme680_bsec_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_temp"
+    sensor_bme680_bsec_pressure: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_pressure"
+    sensor_bme680_bsec_humidity: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_humidity"
+    sensor_bme680_bsec_gas_resistance: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_gas_resistance"
+    sensor_bme680_bsec_iaq: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_iaq"
+    sensor_bme680_bsec_iaq_accuracy: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_iaq_accuracy"
+    sensor_bme680_bsec_co2eq: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_co2eq"
+    sensor_bme680_bsec_breath_voc_eq: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_breath_voc_eq"
+    sensor_bme280_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme280_temp"
+    sensor_bme280_humidity: "{{ pkg.params.identity.id_prefix }}sensor_bme280_humidity"
+    sensor_bme280_pressure: "{{ pkg.params.identity.id_prefix }}sensor_bme280_pressure"
+    sensor_htu21d_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme280_temp"
+    sensor_htu21d_humidity: "{{ pkg.params.identity.id_prefix }}sensor_bme280_humidity"
+    single_click_timing:
+      - ON for at most 0.8s
+      - OFF for at least 0.1s
+    long_press_timing:
+      - ON for at least 1.2s
+    double_click_timing:
+      - ON for at most 1s
+      - OFF for at most 0.3s
+      - ON for at most 1s
+      - OFF for at least 0.2s
+
+  export: [ time, i2c_bus, dallas_int, dallas_ext, motion_sensor ]
+
+esphome:
+  name: '{{pkg.params.identity.hostname}}'
+  platform: ESP32
+  board: wemos_d1_mini32
+  build_path: './build/{{pkg.params.identity.hostname}}'
+  #  comment: "{{ pkg.params.identity.comment|default(null) }}"
+  project:
+    name: jointbox.ceiling-sensor
+    version: "v1.0"
+
+globals:
+  - id: last_motion_time
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+# Enable logging
+logger:
+  level: "{{pkg.params.log_level|default('INFO')}}"
+
+# Wi-Fi Configuration
+wifi:
+  ssid: '{{pkg.params.wifi.ssid}}'
+  password: '{{pkg.params.wifi.password}}'
+  domain: '{{pkg.params.identity.domain_name}}'
+  fast_connect: true
+
+# NTP Configuration
+time:
+  - ~if: "pkg.params.time == 'sntp'"
+    platform: sntp
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+    servers: "{{ pkg.params.ntp_servers }}"
+  - ~if: "pkg.params.time == 'hass'"
+    platform: homeassistant
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+
+# Enable Over the Air updates
+ota:
+  ~if: "pkg.params.ota.enable"
+  safe_mode: True
+  password: '{{ pkg.params.ota.password }}'
+
+# Enable Home Assistant API
+api:
+  ~if: "pkg.params.api.enable"
+  password: '{{ pkg.params.api.api_key }}'
+  reboot_timeout: 1h
+
+# Dallas
+dallas:
+  - pin: GPIO17
+    id: "{{ var.dallas_int }}"
+    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
+  - ~if: "pkg.params.enable_dallas"
+    pin: GPIO33
+    id: "{{ var.dallas_ext }}"
+    update_interval: "{{ pkg.params.dallas_update_interval }}"
+
+# I2C Bus
+i2c:
+  id: '{{ var.i2c_bus }}'
+  sda: GPIO21
+  scl: GPIO22
+  scan: True
+  frequency: 100kHz
+
+switch:
+  - ~if: "pkg.params.enable_reset_switch"
+    platform: restart
+    id: "{{ var.restart_switch }}"
+    name: "{{ pkg.params.identity.friendly_name }} Restart"
+
+bme680_bsec:
+  ~if: "pkg.params.features.sensor_bme680_bsec.enable"
+  address: 0x77
+
+  # Temperature offset
+  # ------------------
+  # Useful if device is in enclosure and reads too high
+  # Default: 0
+  temperature_offset: "{{ pkg.params.features.sensor_bme680_bsec.temperature_offset }}"
+
+  # IAQ calculation mode
+  # --------------------
+  # Available options:
+  # - static (for fixed position devices)
+  # - mobile (for on person or other moveable devices)
+  # Default: static
+  iaq_mode: static
+
+  # Sample rate
+  # -----------
+  # Available options:
+  # - lp (low power - samples every 3 seconds)
+  # - ulp (ultra low power - samples every 5 minutes)
+  # Default: lp
+  sample_rate: lp
+
+  # Interval at which to save BSEC state
+  # ------------------------------------
+  # Default: 6h
+  state_save_interval: 6h
+
+sensor:
+  # Board temperature
+  - platform: dallas
+    index: 0
+    dallas_id: "{{ var.dallas_int }}"
+    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} board temperature"
+    id: "{{ var.board_temperature }}"
+  # Voltage
+  - platform: adc
+    pin: GPIO34
+    name: "{{ pkg.params.identity.friendly_name }} VIN voltage"
+    internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
+    id: "{{ var.vin_voltage }}"
+    attenuation: 11db
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  - platform: adc
+    pin: GPIO39
+    name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
+    internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
+    id: "{{ var.vdd_voltage }}"
+    attenuation: 11db
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  # Illuminance
+  - platform: adc
+    ~if: "pkg.params.features.illuminance.enable"
+    id: "{{ var.illuminance }}_adc"
+    pin: GPIO35
+    name: "{{ pkg.params.identity.friendly_name }} Illuminance ADC"
+    update_interval: "{% if pkg.params.features.illuminance.smoothen %}{{ pkg.params.features.illuminance.update_interval.total_milliseconds / 3 }}ms{% else %}{{ pkg.params.features.illuminance.update_interval }}{% endif %}"
+    internal: true
+    attenuation: 11db
+
+  - platform: resistance
+    ~if: "pkg.params.features.illuminance.enable"
+    id: "{{ var.illuminance }}"
+    sensor: "{{ var.illuminance }}_adc"
+    name: "{{ pkg.params.identity.friendly_name }} Illuminance"
+    internal: "{{ not pkg.params.features.illuminance.expose }}"
+    disabled_by_default: "{{ pkg.params.features.illuminance.disabled_by_default }}"
+    configuration: DOWNSTREAM
+    resistor: 10kOhm
+    reference_voltage: 3.3V
+    device_class: illuminance
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    filters:
+      - calibrate_linear:
+          - 13000 -> 0
+          - 8500 -> 100
+      - median:
+          ~if: "pkg.params.features.illuminance.smoothen"
+          window_size: 3
+          send_every: 3
+          send_first_at: 1
+
+  # BME680 vie BSEC
+  - platform: bme680_bsec
+    ~if: "pkg.params.features.sensor_bme680_bsec.enable"
+    temperature:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.temperature.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Temperature"
+      id: "{{ var.sensor_bme680_bsec_temperature }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.temperature.expose }}"
+      sample_rate: "{{ pkg.params.features.sensor_bme680_bsec.sample_rate }}"
+      filters:
+        - median
+    pressure:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.pressure.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Pressure"
+      id: "{{ var.sensor_bme680_bsec_pressure }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.pressure.expose }}"
+      sample_rate: "{{ pkg.params.features.sensor_bme680_bsec.sample_rate }}"
+      filters:
+        - median
+    humidity:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.humidity.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Humidity"
+      id: "{{ var.sensor_bme680_bsec_humidity }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.humidity.expose }}"
+      sample_rate: "{{ pkg.params.features.sensor_bme680_bsec.sample_rate }}"
+      filters:
+        - median
+    gas_resistance:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.gas_resistance.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Gas Resistance"
+      id: "{{ var.sensor_bme680_bsec_gas_resistance }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.gas_resistance.expose }}"
+      filters:
+        - median
+    iaq:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.iaq.enable"
+      name: "{{ pkg.params.identity.friendly_name }} IAQ"
+      id: "{{ var.sensor_bme680_bsec_iaq }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.iaq.expose }}"
+      filters:
+        - median
+    co2_equivalent:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.co2eq.enable"
+      name: "{{ pkg.params.identity.friendly_name }} eCO2"
+      id: "{{ var.sensor_bme680_bsec_co2eq }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.co2eq.expose }}"
+      accuracy_decimals: 0
+      filters:
+        - median
+    breath_voc_equivalent:
+      ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.breath_voc_eq.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Breath eVOC"
+      id: "{{ var.sensor_bme680_bsec_breath_voc_eq }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.breath_voc_eq.expose }}"
+      filters:
+        - median
+
+  # BME280
+  - platform: bme280
+    ~if: "pkg.params.features.sensor_bme280.enable"
+    address: 0x77
+    iir_filter: 4x
+    update_interval: "{{ pkg.params.features.sensor_bme280.update_interval }}"
+    temperature:
+      ~if: "pkg.params.features.sensor_bme280.sensors.temperature.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Temperature"
+      id: "{{ var.sensor_bme280_temperature }}"
+      internal: "{{ not pkg.params.features.sensor_bme280.sensors.temperature.expose }}"
+    pressure:
+      ~if: "pkg.params.features.sensor_bme280.sensors.pressure.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Pressure"
+      id: "{{ var.sensor_bme280_pressure }}"
+      internal: "{{ not pkg.params.features.sensor_bme280.sensors.pressure.expose }}"
+    humidity:
+      ~if: "pkg.params.features.sensor_bme280.sensors.humidity.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Humidity"
+      id: "{{ var.sensor_bme280_humidity }}"
+      internal: "{{ not pkg.params.features.sensor_bme280.sensors.humidity.expose }}"
+
+  # HTU21D / SI7021
+  - platform: bme280
+    ~if: "pkg.params.features.sensor_htu21d.enable"
+    update_interval: "{{ pkg.params.features.sensor_htu21d.update_interval }}"
+    temperature:
+      ~if: "pkg.params.features.sensor_htu21d.sensors.temperature.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Temperature"
+      id: "{{ var.sensor_htu21d_temperature }}"
+      internal: "{{ not pkg.params.features.sensor_htu21d.sensors.temperature.expose }}"
+    humidity:
+      ~if: "pkg.params.features.sensor_htu21d.sensors.humidity.enable"
+      name: "{{ pkg.params.identity.friendly_name }} Humidity"
+      id: "{{ var.sensor_htu21d_humidity }}"
+      internal: "{{ not pkg.params.features.sensor_htu21d.sensors.humidity.expose }}"
+#  <<: !include ../shared/esp-sensors.yaml
+
+text_sensor:
+  - ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.iaq_accuracy.enable"
+    platform: bme680_bsec
+    iaq_accuracy:
+      # IAQ accuracy as a text value of Stabilizing, Uncertain, Calibrating, Calibrated
+      name: "{{ pkg.params.identity.friendly_name }} IAQ Accuracy"
+      id: "{{ var.sensor_bme680_bsec_iaq_accuracy }}"
+      internal: "{{ not pkg.params.features.sensor_bme680_bsec.sensors.iaq_accuracy.expose }}"
+#  <<: !include ../shared/esp-text-sensors.yaml
+
+binary_sensor:
+  - ~if: "pkg.params.features.motion.enable or pkg.params.features.presence.enable"
+    platform: gpio
+    pin: GPIO25
+    name: "{{ pkg.params.identity.friendly_name }} Motion"
+    internal: "{{ not pkg.params.features.motion.expose or not pkg.params.features.motion.enable}}"
+    id: "{{ var.motion_sensor }}"
+    device_class: motion
+    on_press:
+      then:
+        - lambda: |-
+            id(last_motion_time) = millis();
+
+  - ~if: "pkg.params.features.presence.enable"
+    platform: template
+    device_class: motion
+    name: "{{ pkg.params.identity.friendly_name }} Presence"
+    internal: "{{ not pkg.params.features.presence.expose }}"
+    id: "{{ var.presence_sensor }}"
+    lambda: |-
+      return (millis() - id(last_motion_time)) < {{ pkg.params.features.presence.cooldown_interval.total_milliseconds }};
+
+  # Flash button
+  - ~if: "pkg.params.features.button1.enable"
+    platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "{{ pkg.params.identity.friendly_name }} Button1"
+    internal: "{{ not pkg.params.features.button1.expose or not pkg.params.features.button1.enable}}"
+    id: "{{ var.flash_button }}"
+    on_multi_click:
+      - ~if: "pkg.params.features.button1.on_click is defined"
+        timing: "{{ var.single_click_timing }}"
+        invalid_cooldown: "0.2s"
+        then:
+          ~macro: "jbstd.macros.action_with_fallback"
+          default_action: "{{ pkg.params.features.button1.on_click.default }}"
+          fallback_action: "{{ pkg.params.features.button1.on_click.when_online }}"
+      - ~if: "pkg.params.features.button1.on_long_press is defined"
+        timing: "{{ var.long_press_timing }}"
+        invalid_cooldown: "0.2s"
+        then:
+          ~macro: "jbstd.macros.action_with_fallback"
+          default_action: "{{ pkg.params.features.button1.on_long_press.default }}"
+          fallback_action: "{{ pkg.params.features.button1.when_online }}"
+#  <<: !include ../shared/esp-binary-sensors.yaml
+
+# Infrared Receiver
+remote_receiver:
+  - ~if: "pkg.params.features.ir_receiver.enable"
+    id: "{{ var.ir_receiver }}"
+    pin:
+      number: GPIO32
+      inverted: true
+    dump: "{{ pkg.params.features.ir_receiver.dump }}"
+
+remote_transmitter:
+  - ~if: "pkg.params.features.ir_emitter.enable"
+    id: "{{ var.ir_emitter }}"
+    pin: GPIO12
+    carrier_duty_percent: 50%

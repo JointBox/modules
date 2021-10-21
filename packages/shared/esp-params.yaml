@@ -1,0 +1,78 @@
+log_level:
+  description: "Log level to be applied. See details here: https://esphome.io/components/logger.html#log-levels"
+  default: INFO
+  validator:
+    name: one_of
+    args: [ NONE, ERROR, WARN, INFO, DEBUG, VERBOSE, VERY_VERBOSE ]
+wifi:
+  required: false
+  validator:
+    name: package_params
+    args:
+      ssid:
+        validator: string
+      password:
+        validator: sensitive_string
+identity:
+  required: true
+  validator:
+    name: package_params
+    args:
+      hostname:
+        required: true
+        validator: hostname
+      friendly_name:
+        required: true
+        validator: string
+      id_prefix:
+        required: true
+        default: ''
+        validator: valid_id_prefix
+      domain_name:
+        required: true
+        default: '.local'
+        validator: domain_name
+      comment:
+        required: false
+        validator: string
+ota:
+  required: false
+  default: { enable: false }
+  validator:
+    name: package_params
+    args:
+      enable:
+        default: true
+        required: true
+        validator: boolean
+      password:
+        required: true
+        default: '$generate'
+        validator: ensure_api_key
+api:
+  required: false
+  default: { enable: false }
+  validator:
+    name: package_params
+    args:
+      enable:
+        default: true
+        required: true
+        validator: boolean
+      api_key:
+        required: true
+        default: '$generate'
+        validator: ensure_api_key
+time:
+  default: sntp
+  validator:
+    name: one_of
+    args: [ NONE, sntp, hass ]
+enable_reset_switch:
+  default: true
+  validator: boolean
+timezone:
+  default: Europe/Kiev
+  validator: string
+ntp_servers:
+  default: ["185.102.185.102", "212.1.104.9", "91.210.190.13"]

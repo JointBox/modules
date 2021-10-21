@@ -1,0 +1,15 @@
+- ~if: "pkg.params.internal_sensors.version.enable"
+  platform: version
+  internal: "{{ not pkg.params.internal_sensors.version.expose }}"
+  hide_timestamp: false
+  name: "{{ pkg.params.identity.friendly_name }} Build Version"
+  disabled_by_default: "{{ not pkg.params.internal_sensors.version.disabled_by_default }}"
+  id: "{{ var.version }}"
+
+- platform: template
+  name: "{{ pkg.params.identity.friendly_name }} Jointbox Device"
+  lambda: |-
+    return {"{{ var.jointbox_device_str }}"};
+  update_interval: never
+  disabled_by_default: false
+  id: "{{ var.jointbox_device_sensor }}"

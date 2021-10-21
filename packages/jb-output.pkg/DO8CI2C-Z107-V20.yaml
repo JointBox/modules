@@ -1,0 +1,45 @@
+package:
+  description: Jointbox Output Module
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    address:
+      required: true
+      validator: mcp23017_address
+    generate_outputs:
+      default: true
+      validator: boolean
+    output_prefix:
+      required: false
+      validator: valid_id_prefix
+    zones:
+      required: true
+      default: 16
+      validator:
+        name: int_range
+        args: { min: 0, max: 16 }
+
+  variables:
+    hub_id: '{{ pkg.instance_name }}_hub'
+    output_prefix: '{{ pkg.params.output_prefix|default(pkg.instance_name + "_") }}'
+
+  export:
+    - hub_id
+    - name: output_prefix
+      description: Prefix added to output id
+
+mcp23017:
+  - id: '{{ var.hub_id }}'
+    address: '{{ pkg.params.address }}'
+
+output:
+  - ~if: 'pkg.params.generate_outputs'
+    ~count: 'pkg.params.zones'
+    platform: gpio
+    id: '{{ var.output_prefix}}{{ loop.index }}'
+    pin:
+      mcp23xxx: "{{ var.hub_id }}"
+      number: "{{ loop.index }}"
+      mode: OUTPUT
+      inverted: false

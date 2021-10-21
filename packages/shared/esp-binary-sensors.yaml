@@ -1,0 +1,6 @@
+# Connection status.
+- ~if: "pkg.params.internal_sensors.connection_status.enable"
+  platform: status
+  id: "{{ var.connection_status }}"
+  internal: "{{ not pkg.params.internal_sensors.connection_status.expose }}"
+  name: "{{ pkg.params.identity.friendly_name }} Connection Status"

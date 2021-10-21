@@ -1,0 +1,12 @@
+uptime:
+  default: { }
+  validator: optional_poling_sensor
+wifi_signal:
+  default: { }
+  validator: optional_poling_sensor
+connection_status:
+  default: { }
+  validator: optional_sensor
+version:
+  default: { }
+  validator: optional_sensor

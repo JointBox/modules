@@ -1,0 +1,16 @@
+# Uptime sensor.
+- ~if: "pkg.params.internal_sensors.uptime.enable"
+  platform: uptime
+  internal: "{{ not pkg.params.internal_sensors.uptime.expose }}"
+  id: "{{ var.uptime }}"
+  name: "{{ pkg.params.identity.friendly_name }} Uptime"
+  update_interval: "{{ pkg.params.internal_sensors.uptime.update_interval }}"
+  icon: mdi:timer
+
+# WiFi Signal sensor.
+- ~if: "pkg.params.internal_sensors.wifi_signal.enable"
+  platform: wifi_signal
+  id: "{{ var.wifi_signal }}"
+  internal: "{{ not pkg.params.internal_sensors.wifi_signal.expose }}"
+  name: "{{ pkg.params.identity.friendly_name }} WiFi Signal"
+  update_interval: "{{ pkg.params.internal_sensors.wifi_signal.update_interval }}"
