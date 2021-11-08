@@ -1,0 +1,211 @@
+package:
+  description: Jointbox Unit
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    <<: !include ../shared/esp-params.yaml
+    enable_spi:
+      default: false
+      validator: boolean
+    enable_uart:
+      default: false
+      validator: boolean
+    enable_dallas:
+      default: false
+      validator: boolean
+    dallas_update_interval:
+      default: 10min
+      validator: time_period
+    time:
+      default: sntp
+      validator:
+        name: one_of
+        args: [ NONE, sntp, hass ]
+    enable_reset_switch:
+      default: true
+      validator: boolean
+    i2c_freq:
+      default: 100kHz
+      validator: frequency
+    uart_baudrate:
+      default: 9600
+      validator: integer
+    timezone:
+      default: Europe/Kiev
+      validator: string
+    ntp_servers:
+      default: ["185.102.185.102", "212.1.104.9", "91.210.190.13"]
+#      validator:
+#        name: ensure_list
+#        args: !!str
+    internal_sensors:
+      default: { }
+      validator:
+        name: package_params
+        args:
+          board_temperature:
+            default: { }
+            validator: optional_poling_sensor
+          vdd_voltage:
+            default: { }
+            validator: optional_poling_sensor
+          vin_voltage:
+            default: { }
+            validator: optional_poling_sensor
+          bat_voltage:
+            default: { }
+            validator: optional_poling_sensor
+          <<: !include ../shared/esp-params-internal-sensors.yaml
+
+  variables:
+    <<: !include ../shared/esp-common-sensor-vars.yaml
+    i2c_bus: '{{ pkg.params.identity.id_prefix }}i2c0'
+    uart_ext: '{{ pkg.params.identity.id_prefix }}uart_ext'
+    spi_bus: '{{ pkg.params.identity.id_prefix }}spi0'
+    spi_cs_pin: 'GPIO15'
+    dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
+    dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
+    bat_voltage: '{{ pkg.params.identity.id_prefix }}bat_voltage'
+    board_temperature: '{{ pkg.params.identity.id_prefix }}board_temperature'
+    jointbox_unit_version: 'MD1M32-G-Z107-V21'
+    jointbox_device_str: 'JB Unit, {{ var.jointbox_unit_version }}'
+
+  export: [ time, i2c_bus, spi_bus, spi_cs_pin, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
+            restart_switch, uptime, wifi_signal, connection_status, uart_ext ]
+
+esphome:
+  name: '{{pkg.params.identity.hostname}}'
+  platform: ESP32
+  board: wemos_d1_mini32
+  build_path: './build/{{pkg.params.identity.hostname}}'
+#  comment: "{{ pkg.params.identity.comment|default(null) }}"
+  project:
+    name: jointbox.unit
+    version: "v2.1"
+
+
+# I2C Bus
+i2c:
+  id: '{{ var.i2c_bus }}'
+  sda: GPIO4
+  scl: GPIO5
+  scan: True
+  frequency: 200kHz
+
+# UART
+uart:
+  - ~if: "pkg.params.enable_uart"
+    id: "{{ var.uart_ext }}"
+    rx_pin: GPIO16
+    tx_pin: GPIO17
+    baud_rate: "{{ pkg.params.uart_baudrate }}"
+    stop_bits: 1
+
+spi:
+  - ~if: "pkg.params.enable_spi"
+    id: "{{ var.spi_bus }}"
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin: GPIO12
+
+# Enable logging
+logger:
+  level: "{{pkg.params.log_level|default('INFO')}}"
+
+# Wi-Fi Configuration
+wifi:
+  ssid: '{{pkg.params.wifi.ssid}}'
+  password: '{{pkg.params.wifi.password}}'
+  domain: '{{pkg.params.identity.domain_name}}'
+  fast_connect: true
+
+# NTP Configuration
+time:
+  - ~if: "pkg.params.time == 'sntp'"
+    platform: sntp
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+    servers: "{{ pkg.params.ntp_servers }}"
+  - ~if: "pkg.params.time == 'hass'"
+    platform: homeassistant
+    id: "{{ var.time }}"
+    timezone: "{{ pkg.params.timezone }}"
+
+# Enable Over the Air updates
+ota:
+  ~if: "pkg.params.ota.enable"
+  safe_mode: True
+  password: '{{ pkg.params.ota.password }}'
+
+# Enable Home Assistant API
+api:
+  ~if: "pkg.params.api.enable"
+  password: '{{ pkg.params.api.api_key }}'
+  reboot_timeout: 1h
+
+# Dallas
+dallas:
+  - pin: GPIO2
+    id: "{{ var.dallas_int }}"
+    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
+  - ~if: "pkg.params.enable_dallas"
+    pin: GPIO33
+    id: "{{ var.dallas_ext }}"
+    update_interval: "{{ pkg.params.dallas_update_interval }}"
+
+switch:
+  - ~if: "pkg.params.enable_reset_switch"
+    platform: restart
+    id: "{{ var.restart_switch }}"
+    name: "{{ pkg.params.identity.friendly_name }} Restart"
+
+# Internal sensors
+sensor:
+  # Board temperature
+  - platform: dallas
+    index: 0
+    dallas_id: "{{ var.dallas_int }}"
+    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} board temperature"
+    id: "{{ var.board_temperature }}"
+
+  # Voltage
+  - platform: adc
+    pin: GPIO34
+    name: "{{ pkg.params.identity.friendly_name }} VIN voltage"
+    internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
+    id: "{{ var.vin_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  - platform: adc
+    pin: GPIO39
+    name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
+    internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
+    id: "{{ var.vdd_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+  - platform: adc
+    pin: GPIO35
+    name: "{{ pkg.params.identity.friendly_name }} BAT voltage"
+    internal: "{{ not pkg.params.internal_sensors.bat_voltage.expose }}"
+    update_interval: "{{ pkg.params.internal_sensors.bat_voltage.update_interval }}"
+    id: "{{ var.bat_voltage }}"
+    filters:
+      - calibrate_linear:
+          - 0.0 -> 0.0
+          - 0.3763 -> 4.954
+
+  <<: !include ../shared/esp-sensors.yaml
+
+binary_sensor:
+  <<: !include ../shared/esp-binary-sensors.yaml
+
+text_sensor:
+  <<: !include ../shared/esp-text-sensors.yaml
