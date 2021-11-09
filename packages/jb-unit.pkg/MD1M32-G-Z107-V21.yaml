@@ -181,7 +181,7 @@ sensor:
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.54319 -> 8.640
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
@@ -191,7 +191,7 @@ sensor:
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.54319 -> 8.640
   - platform: adc
     pin: GPIO35
     name: "{{ pkg.params.identity.friendly_name }} BAT voltage"
@@ -201,7 +201,7 @@ sensor:
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.54319 -> 8.640
 #
 #  # Uptime sensor.
 #  - ~if: "pkg.params.internal_sensors.uptime.enable"
