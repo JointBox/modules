@@ -1,0 +1,129 @@
+package:
+  description: Jointbox UI Module
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    display_address:
+      required: true
+      default: 0x3C
+      validator: pcf8574_address
+    display_rotation:
+      required: true
+      default: 2
+      validator: integer
+    io_address:
+      required: true
+      default: 0x23
+      validator: mcp23017_address
+    timing:
+      required: true
+      default: { }
+      validator:
+        name: package_params
+        args:
+          debounce_interval:
+            default: 0.2s
+            validator: time_period
+          multiclick_cooldown:
+            default: 0.5s
+            validator: time_period
+
+  variables:
+    display_id: '{{ pkg.package_instance }}_display0'
+    io_hub_id: '{{ pkg.package_instance }}_io_hub0'
+    btn_left: '{{ pkg.package_instance }}_btn_left'
+    btn_right: '{{ pkg.package_instance }}_btn_right'
+    btn_up: '{{ pkg.package_instance }}_btn_up'
+    btn_down: '{{ pkg.package_instance }}_btn_down'
+    single_click_timing:
+      - ON for at most 0.8s
+      - OFF for at least 0.1s
+    long_press_timing:
+      - ON for at least 1.2s
+    double_click_timing:
+      - ON for at most 1s
+      - OFF for at most 0.3s
+      - ON for at most 1s
+      - OFF for at least 0.2s
+
+  export:
+    - display_id
+    - io_hub_id
+
+  macros:
+    button:
+      params:
+        name:
+          validator: string
+        id:
+          required: true
+          validator: valid_id
+        input_num:
+          validator:
+            name: int_range
+            args: { min: 0, max: 15 }
+        expose:
+          default: false
+          validator: boolean
+        on_click:
+          required: false
+          validator: actions_with_fallback
+        on_long_press:
+          required: false
+          validator: actions_with_fallback
+      body:
+        platform: gpio
+        internal: "{{ not macro.params.expose }}"
+        name: "{{ macro.params.name }}"
+        id: "{{ macro.params.id }}"
+        pin:
+          pcf8574: "{{ var.io_hub_id }}"
+          number: "{{ macro.params.input_num }}"
+          inverted: true
+        on_multi_click:
+          - ~if: "macro.params.on_click is defined"
+            timing: "{{ var.single_click_timing }}"
+            invalid_cooldown: "{{ pkg.params.timing.multiclick_cooldown }}"
+            then:
+              ~macro: "jbstd.macros.action_with_fallback"
+              default_action: "{{ macro.params.on_click.default }}"
+              fallback_action: "{{ macro.params.on_click.when_online }}"
+          - ~if: "macro.params.on_long_press is defined"
+            timing: "{{ var.long_press_timing }}"
+            invalid_cooldown: "{{ pkg.params.timing.multiclick_cooldown }}"
+            then:
+              ~macro: "jbstd.macros.action_with_fallback"
+              default_action: "{{ macro.params.on_long_press.default }}"
+              fallback_action: "{{ macro.params.on_long_press.when_online }}"
+
+font:
+  - file: "{{ pkg.file_system_location|replace('/main.yaml', '') }}/resources/helvetica-400.ttf"
+    id: helvetica_400_16px
+    glyphs: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz<>!"%()+,-_.:°'
+    size: 16
+  - file: "{{ pkg.file_system_location|replace('/main.yaml', '') }}/resources/helvetica-400.ttf"
+    id: giant_font
+    glyphs: '0123456789'
+    size: 20
+  - file: "{{ pkg.file_system_location|replace('/main.yaml', '') }}/resources/helvetica-400.ttf"
+    id: default_font
+    glyphs: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz<>!"%()+,-_.:°'
+    size: 12
+
+image:
+  - file: "{{ pkg.file_system_location|replace('/main.yaml', '') }}/resources/jointbox.png"
+    id: jb_logo
+    resize: 40x44
+
+pcf8574:
+  - id: '{{ var.io_hub_id }}'
+    address: '{{ pkg.params.io_address }}'
+    pcf8575: False
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 128x64"
+    address: '{{ pkg.params.display_address }}'
+    rotation: '180°'
+    id: '{{ var.display_id }}'

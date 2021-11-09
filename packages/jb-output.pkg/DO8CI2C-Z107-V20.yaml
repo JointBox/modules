@@ -6,6 +6,7 @@ package:
   params:
     address:
       required: true
+      default: 0x27
       validator: mcp23017_address
     generate_outputs:
       default: true
@@ -13,7 +14,7 @@ package:
     output_prefix:
       required: false
       validator: valid_id_prefix
-    zones:
+    channels:
       required: true
       default: 16
       validator:
@@ -35,7 +36,7 @@ mcp23017:
 
 output:
   - ~if: 'pkg.params.generate_outputs'
-    ~count: 'pkg.params.zones'
+    ~count: 'pkg.params.channels'
     platform: gpio
     id: '{{ var.output_prefix}}{{ loop.index }}'
     pin:

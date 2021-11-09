@@ -1,9 +1,9 @@
 uptime:
   default: { }
-  validator: optional_poling_sensor
+  validator: optional_polling_sensor
 wifi_signal:
   default: { }
-  validator: optional_poling_sensor
+  validator: optional_polling_sensor
 connection_status:
   default: { }
   validator: optional_sensor

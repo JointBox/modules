@@ -1,0 +1,65 @@
+package:
+  description: Jointbox Current Meter Module
+  author: Jointbox Team <support@jointbox.org>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+  params:
+    address:
+      required: true
+      default: 0x48
+      validator: ads1115_address
+    input_prefix:
+      required: true
+      validator: valid_id_prefix
+    generate_sensors:
+      required: true
+      default: true
+      validator: boolean
+    channels:
+      required: true
+      validator:
+        name: package_params_list
+        args:
+          name:
+            validator: string
+          update_interval:
+            default: 2min
+            validator: time_period
+  variables:
+    hub_id: '{{ pkg.instance_name + "_hub" }}'
+    channel_in_prefix: '{{ pkg.params.input_prefix|default(pkg.instance_name + "_") }}'
+
+  export:
+    - hub_id
+    - name: channel_in_prefix
+      description: Prefix added to output channel id
+
+ads1115:
+  - address: '{{ pkg.params.address }}'
+    id: '{{ var.hub_id }}'
+
+sensor:
+  - ~if: 'pkg.params.generate_sensors'
+    ~for_each: 'pkg.params.channels'
+    platform: ads1115
+    multiplexer: 'A{{ loop.index }}_GND'
+    gain: 4.096
+    name: "ADS1115 Channel A{{ loop.index }}-GND"
+    update_interval: '{{ it.update_interval }}'
+    internal: true
+    id: '{{ var.channel_in_prefix }}_adc{{ loop.index }}'
+
+  - ~if: 'pkg.params.generate_sensors'
+    ~for_each: 'pkg.params.channels'
+    platform: ct_clamp
+    sensor: '{{ var.channel_in_prefix }}_adc{{ loop.index }}'
+    id: '{{ var.channel_in_prefix }}{{ loop.index }}'
+    name: "{{ it.name }}"
+    update_interval: '{{ it.update_interval }}'
+    filters:
+      - calibrate_linear:
+          - 0.0009 -> 0
+          - 0.004292 -> 0.156
+          - 0.14887 -> 5.32
+          - 0.2249 -> 8.12
+      - lambda: 'return (x > 0.01) ? x : 0.0;'
