@@ -1,5 +1,5 @@
 package:
-  description: Jointbox Ceiling Sensor
+  description: Jointbox Wall Sensor
   author: Jointbox Team <support@jointbox.org>
   license: MIT
   tags: [ jointbox, jb-module ]
@@ -25,21 +25,6 @@ package:
       validator:
         name: package_params
         args:
-          motion:
-            default: { enable: true }
-            validator: sensor & optional
-          presence:
-            default: { enable: true }
-            validator:
-              name: combine
-              args:
-                - sensor
-                - optional
-                - name: package_params
-                  args:
-                    cooldown_interval:
-                      default: 10min
-                      validator: time_period
           illuminance:
             default: { enable: false }
             validator:
@@ -88,7 +73,6 @@ package:
                     on_double_click:
                       required: false
                       validator: actions_with_fallback
-
           sensor_bme680_bsec:
             default: { enable: false }
             validator:
@@ -180,19 +164,41 @@ package:
                           humidity:
                             default: { enable: true }
                             validator: optional_sensor
+          buzzer:
+            default: { enable: true }
+            validator:
+              name: combine
+              args:
+                - optional
+                - name: package_params
+                  args:
+                    frequency:
+                      required: true
+                      default: 2700Hz
+                      validator: frequency
+          rtttl:
+            default: { enable: true }
+            validator: optional
+          modbus:
+            default: { enable: false }
+            validator: optional
+          sensor_mhz19:
+            default: { enable: false, expose: true, update_interval: 5m }
+            validator: sensor & optional & polling
   variables:
     i2c_bus: "{{ pkg.params.identity.id_prefix }}i2c0"
     dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
     dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
     ir_receiver: '{{ pkg.params.identity.id_prefix}}ir_receiver'
     ir_emitter: '{{ pkg.params.identity.id_prefix}}ir_emitter'
+    buzzer_rtttl: '{{ pkg.params.identity.id_prefix}}buzzer_rtttl'
+    buzzer: '{{ pkg.params.identity.id_prefix}}buzzer'
+    modbus: '{{ pkg.params.identity.id_prefix}}modbus'
     illuminance: '{{ pkg.params.identity.id_prefix}}illuminance'
     flash_button: '{{ pkg.params.identity.id_prefix}}flash_button'
     jointbox_device_version: 'SENCHTPLM-RS-V10'
     jointbox_device_str: 'JB Ceiling Sensor, {{ var.jointbox_device_version }}'
     <<: !include ../shared/esp-common-sensor-vars.yaml
-    motion_sensor: "{{ pkg.params.identity.id_prefix }}motion_sensor"
-    presence_sensor: "{{ pkg.params.identity.id_prefix }}presence_sensor"
     sensor_bme680_bsec_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_temp"
     sensor_bme680_bsec_pressure: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_pressure"
     sensor_bme680_bsec_humidity: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_humidity"
@@ -206,6 +212,7 @@ package:
     sensor_bme280_pressure: "{{ pkg.params.identity.id_prefix }}sensor_bme280_pressure"
     sensor_htu21d_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme280_temp"
     sensor_htu21d_humidity: "{{ pkg.params.identity.id_prefix }}sensor_bme280_humidity"
+    sensor_mhz19: '{{ pkg.params.identity.id_prefix}}sensor_mhz19'
     single_click_timing:
       - ON for at most 0.8s
       - OFF for at least 0.1s
@@ -217,7 +224,7 @@ package:
       - ON for at most 1s
       - OFF for at least 0.2s
 
-  export: [ time, i2c_bus, dallas_int, dallas_ext, motion_sensor ]
+  export: [ time, i2c_bus, dallas_int, dallas_ext, buzzer, modbus ]
 
 esphome:
   name: '{{pkg.params.identity.hostname}}'
@@ -229,11 +236,6 @@ esphome:
     name: jointbox.ceiling-sensor
     version: "v1.0"
 
-globals:
-  - id: last_motion_time
-    type: int
-    restore_value: no
-    initial_value: '0'
 
 # Enable logging
 logger:
@@ -292,6 +294,24 @@ i2c:
   scl: GPIO22
   scan: True
   frequency: 100kHz
+
+uart:
+  - ~if: 'pkg.params.features.modbus.enable'
+    id: uart_modbus
+    tx_pin: GPIO17
+    rx_pin: GPIO16
+    baud_rate: 115200
+    stop_bits: 1
+  - ~if: 'pkg.params.features.sensor_mhz19.enable'
+    id: uart_mhz19
+    rx_pin: GPIO25
+    tx_pin: GPIO26
+    baud_rate: 9600
+
+modbus:
+  ~if: 'pkg.params.features.modbus.enable'
+  id: '{{ var.modbus }}'
+  uart_id: uart_modbus
 
 switch:
   - ~if: "pkg.params.enable_reset_switch"
@@ -488,6 +508,14 @@ sensor:
       id: "{{ var.sensor_htu21d_humidity }}"
       internal: "{{ not pkg.params.features.sensor_htu21d.sensors.humidity.expose }}"
 #  <<: !include ../shared/esp-sensors.yaml
+  - ~if: 'pkg.params.features.sensor_mhz19.enable'
+    platform: mhz19
+    uart_id: uart_mhz19
+    id: '{{ var.sensor_mhz19 }}'
+    co2:
+      name: "{{ pkg.params.identity.friendly_name }} CO2"
+    update_interval: '{{ pkg.params.features.sensor_mhz19.update_interval }}'
+    automatic_baseline_calibration: false
 
 text_sensor:
   - ~if: "pkg.params.features.sensor_bme680_bsec.enable and pkg.params.features.sensor_bme680_bsec.sensors.iaq_accuracy.enable"
@@ -500,27 +528,6 @@ text_sensor:
 #  <<: !include ../shared/esp-text-sensors.yaml
 
 binary_sensor:
-  - ~if: "pkg.params.features.motion.enable or pkg.params.features.presence.enable"
-    platform: gpio
-    pin: GPIO25
-    name: "{{ pkg.params.identity.friendly_name }} Motion"
-    internal: "{{ not pkg.params.features.motion.expose or not pkg.params.features.motion.enable}}"
-    id: "{{ var.motion_sensor }}"
-    device_class: motion
-    on_press:
-      then:
-        - lambda: |-
-            id(last_motion_time) = millis();
-
-  - ~if: "pkg.params.features.presence.enable"
-    platform: template
-    device_class: motion
-    name: "{{ pkg.params.identity.friendly_name }} Presence"
-    internal: "{{ not pkg.params.features.presence.expose }}"
-    id: "{{ var.presence_sensor }}"
-    lambda: |-
-      return (millis() - id(last_motion_time)) < {{ pkg.params.features.presence.cooldown_interval.total_milliseconds }};
-
   # Flash button
   - ~if: "pkg.params.features.button1.enable"
     platform: gpio
@@ -562,3 +569,14 @@ remote_transmitter:
     id: "{{ var.ir_emitter }}"
     pin: GPIO12
     carrier_duty_percent: 50%
+
+output:
+  - platform: ledc
+    ~if: 'pkg.params.features.buzzer.enable or pkg.params.features.rtttl.enable'
+    pin: GPIO27
+    id: '{{ var.buzzer }}'
+
+rtttl:
+  ~if: 'pkg.params.features.rtttl.enable'
+  id: '{{ var.buzzer_rtttl }}'
+  output: '{{ var.buzzer }}'
