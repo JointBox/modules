@@ -69,6 +69,9 @@ api:
         required: true
         default: '$generate'
         validator: ensure_api_key
+      encryption_key:
+        required: true
+        validator: ensure_api_key
 time:
   default: sntp
   validator:

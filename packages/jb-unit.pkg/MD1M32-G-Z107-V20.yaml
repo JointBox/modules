@@ -142,6 +142,7 @@ ota:
 api:
   ~if: "pkg.params.api.enable"
   password: '{{ pkg.params.api.api_key }}'
+  encryption: '{{ pkg.params.encryption_key }}'
   reboot_timeout: 1h
 
 # Dallas
