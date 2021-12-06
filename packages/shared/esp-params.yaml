@@ -71,7 +71,7 @@ api:
         validator: ensure_api_key
       encryption_key:
         required: true
-        validator: ensure_api_key
+        validator: sensitive_string
 time:
   default: sntp
   validator:
