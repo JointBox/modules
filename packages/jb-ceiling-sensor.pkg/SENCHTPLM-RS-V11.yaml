@@ -345,22 +345,22 @@ sensor:
     internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
     id: "{{ var.vin_voltage }}"
-    attenuation: 11db
+    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.321 -> 5.02
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
     internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
     id: "{{ var.vdd_voltage }}"
-    attenuation: 11db
+    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.321 -> 5.02
   # Illuminance
   - platform: adc
     ~if: "pkg.params.features.illuminance.enable"

@@ -1,1 +1,1 @@
-<<: !include SENWHTPLC-CR-V30.yaml
+<<: !include SENCHTPLM-RS-V11.yaml

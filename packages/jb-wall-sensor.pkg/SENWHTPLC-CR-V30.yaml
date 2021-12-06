@@ -193,11 +193,11 @@ package:
     ir_emitter: '{{ pkg.params.identity.id_prefix}}ir_emitter'
     buzzer_rtttl: '{{ pkg.params.identity.id_prefix}}buzzer_rtttl'
     buzzer: '{{ pkg.params.identity.id_prefix}}buzzer'
-    modbus: '{{ pkg.params.identity.id_prefix}}modbus'
+    modbus: '{{ pkg.params.identity.id_prefix}}modbus0'
     illuminance: '{{ pkg.params.identity.id_prefix}}illuminance'
     flash_button: '{{ pkg.params.identity.id_prefix}}flash_button'
-    jointbox_device_version: 'SENCHTPLM-RS-V10'
-    jointbox_device_str: 'JB Ceiling Sensor, {{ var.jointbox_device_version }}'
+    jointbox_device_version: 'SENWHTPLC-CR-V30'
+    jointbox_device_str: 'JB Wall Sensor, {{ var.jointbox_device_version }}'
     <<: !include ../shared/esp-common-sensor-vars.yaml
     sensor_bme680_bsec_temperature: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_temp"
     sensor_bme680_bsec_pressure: "{{ pkg.params.identity.id_prefix }}sensor_bme680_bsec_pressure"
@@ -233,9 +233,11 @@ esphome:
   build_path: './build/{{pkg.params.identity.hostname}}'
   #  comment: "{{ pkg.params.identity.comment|default(null) }}"
   project:
-    name: jointbox.ceiling-sensor
+    name: jointbox.wall-sensor
     version: "v1.0"
-
+  on_boot:
+    # Turn on green led on boot
+    - output.turn_on: led_g
 
 # Enable logging
 logger:
@@ -365,22 +367,22 @@ sensor:
     internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
     id: "{{ var.vin_voltage }}"
-    attenuation: 11db
+    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.321 -> 5.02
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
     internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
     id: "{{ var.vdd_voltage }}"
-    attenuation: 11db
+    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.3763 -> 4.954
+          - 0.321 -> 5.02
   # Illuminance
   - platform: adc
     ~if: "pkg.params.features.illuminance.enable"
@@ -474,7 +476,7 @@ sensor:
   # BME280
   - platform: bme280
     ~if: "pkg.params.features.sensor_bme280.enable"
-    address: 0x77
+    address: 0x76
     iir_filter: 4x
     update_interval: "{{ pkg.params.features.sensor_bme280.update_interval }}"
     temperature:
@@ -507,7 +509,7 @@ sensor:
       name: "{{ pkg.params.identity.friendly_name }} Humidity"
       id: "{{ var.sensor_htu21d_humidity }}"
       internal: "{{ not pkg.params.features.sensor_htu21d.sensors.humidity.expose }}"
-#  <<: !include ../shared/esp-sensors.yaml
+  #  <<: !include ../shared/esp-sensors.yaml
   - ~if: 'pkg.params.features.sensor_mhz19.enable'
     platform: mhz19
     uart_id: uart_mhz19
@@ -575,8 +577,31 @@ output:
     ~if: 'pkg.params.features.buzzer.enable or pkg.params.features.rtttl.enable'
     pin: GPIO27
     id: '{{ var.buzzer }}'
+  - platform: gpio
+    pin: GPIO18
+    id: led_b
+    inverted: false
+  - platform: gpio
+    pin: GPIO23
+    id: led_g
+    inverted: false
+  - platform: gpio
+    pin: GPIO19
+    id: led_r
+    inverted: false
 
 rtttl:
   ~if: 'pkg.params.features.rtttl.enable'
   id: '{{ var.buzzer_rtttl }}'
   output: '{{ var.buzzer }}'
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - output.turn_on: led_b
+          else:
+            - output.turn_off: led_b
