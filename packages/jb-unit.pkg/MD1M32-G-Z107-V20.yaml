@@ -46,16 +46,16 @@ package:
         args:
           board_temperature:
             default: { }
-            validator: optional_poling_sensor
+            validator: optional_polling_sensor
           vdd_voltage:
             default: { }
-            validator: optional_poling_sensor
+            validator: optional_polling_sensor
           vin_voltage:
             default: { }
-            validator: optional_poling_sensor
+            validator: optional_polling_sensor
           bat_voltage:
             default: { }
-            validator: optional_poling_sensor
+            validator: optional_polling_sensor
           <<: !include ../shared/esp-params-internal-sensors.yaml
 
   variables:
@@ -115,10 +115,13 @@ logger:
 
 # Wi-Fi Configuration
 wifi:
-  ssid: '{{pkg.params.wifi.ssid}}'
-  password: '{{pkg.params.wifi.password}}'
+  ~if: 'pkg.params.wifi.enable'
   domain: '{{pkg.params.identity.domain_name}}'
-  fast_connect: true
+  fast_connect: '{{pkg.params.wifi.hidden}}'
+  networks:
+    - ssid: '{{pkg.params.wifi.ssid}}'
+      password: '{{pkg.params.wifi.password}}'
+      hidden: '{{pkg.params.wifi.hidden}}'
 
 # NTP Configuration
 time:
@@ -204,10 +207,10 @@ sensor:
           - 0.0 -> 0.0
           - 0.3763 -> 4.954
 
-  <<: !include ../shared/esp-sensors.yaml
+  - <<[]: !include ../shared/esp-sensors.yaml
 
 binary_sensor:
-  <<: !include ../shared/esp-binary-sensors.yaml
+  - <<[]: !include ../shared/esp-binary-sensors.yaml
 
 text_sensor:
-  <<: !include ../shared/esp-text-sensors.yaml
+  - <<[]: !include ../shared/esp-text-sensors.yaml

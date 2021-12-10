@@ -1,0 +1,13 @@
+package:
+  description: Jointbox Ethernet Module
+  author: Jointbox Team <support@jointbox.io>
+  license: MIT
+  tags: [ jointbox, jb-module ]
+
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 1
+  power_pin: GPIO02

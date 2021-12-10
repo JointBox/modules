@@ -8,7 +8,7 @@
   icon: mdi:timer
 
 # WiFi Signal sensor.
-- ~if: "pkg.params.internal_sensors.wifi_signal.enable"
+- ~if: "pkg.params.internal_sensors.wifi_signal.enable and pkg.params.wifi.enable"
   platform: wifi_signal
   id: "{{ var.wifi_signal }}"
   internal: "{{ not pkg.params.internal_sensors.wifi_signal.expose }}"
