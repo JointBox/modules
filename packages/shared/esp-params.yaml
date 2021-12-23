@@ -72,6 +72,10 @@ api:
       encryption_key:
         required: true
         validator: sensitive_string
+      reboot_timeout:
+        required: true
+        default: 1h
+        validator: time_period
 time:
   default: sntp
   validator:

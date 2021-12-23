@@ -88,8 +88,8 @@ esphome:
 # I2C Bus
 i2c:
   id: '{{ var.i2c_bus }}'
-  sda: GPIO4
-  scl: GPIO5
+  sda: GPIO16
+  scl: GPIO17
   scan: True
   frequency: '{{ pkg.params.i2c_freq }}'
 
@@ -97,8 +97,8 @@ i2c:
 uart:
   - ~if: "pkg.params.enable_uart"
     id: "{{ var.uart_ext }}"
-    rx_pin: GPIO16
-    tx_pin: GPIO17
+    rx_pin: GPIO4
+    tx_pin: GPIO5
     baud_rate: "{{ pkg.params.uart_baudrate }}"
     stop_bits: 1
 
@@ -144,13 +144,10 @@ api:
   password: '{{ pkg.params.api.api_key }}'
   encryption:
     key: '{{ pkg.params.api.encryption_key }}'
-  reboot_timeout: 1h
+  reboot_timeout: '{{ pkg.params.api.reboot_timeout }}'
 
 # Dallas
 dallas:
-#  - pin: GPIO2
-#    id: "{{ var.dallas_int }}"
-#    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
   - ~if: "pkg.params.enable_dallas"
     pin: GPIO33
     id: "{{ var.dallas_ext }}"
