@@ -277,7 +277,7 @@ ota:
 api:
   ~if: "pkg.params.api.enable and pkg.params.wifi.enable"
   password: '{{ pkg.params.api.api_key }}'
-  reboot_timeout: 1h
+  reboot_timeout: '{{ pkg.params.api.reboot_timeout }}'
 
 # Dallas
 dallas:
