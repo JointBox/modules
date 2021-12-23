@@ -163,12 +163,12 @@ switch:
 sensor:
   - <<[]: !include ../shared/esp-sensors.yaml
   # Board temperature
-#  - platform: dallas
-#    index: 0
-#    dallas_id: "{{ var.dallas_int }}"
-#    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
-#    name: "{{ pkg.params.identity.friendly_name }} board temperature"
-#    id: "{{ var.board_temperature }}"
+  - platform: dallas
+    index: 0
+    dallas_id: "{{ var.dallas_int }}"
+    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
+    name: "{{ pkg.params.identity.friendly_name }} board temperature"
+    id: "{{ var.board_temperature }}"
 
   # Voltage
   - platform: adc
@@ -201,23 +201,6 @@ sensor:
       - calibrate_linear:
           - 0.0 -> 0.0
           - 0.54319 -> 8.640
-#
-#  # Uptime sensor.
-#  - ~if: "pkg.params.internal_sensors.uptime.enable"
-#    platform: uptime
-#    internal: "{{ not pkg.params.internal_sensors.uptime.expose }}"
-#    id: "{{ var.uptime }}"
-#    name: "{{ pkg.params.identity.friendly_name }} Uptime"
-#    update_interval: "{{ pkg.params.internal_sensors.uptime.update_interval }}"
-#    icon: mdi:timer
-#
-#  # WiFi Signal sensor.
-#  - ~if: "pkg.params.internal_sensors.wifi_signal.enable"
-#    platform: wifi_signal
-#    id: "{{ var.wifi_signal }}"
-#    internal: "{{ not pkg.params.internal_sensors.wifi_signal.expose }}"
-#    name: "{{ pkg.params.identity.friendly_name }} WiFi Signal"
-#    update_interval: "{{ pkg.params.internal_sensors.wifi_signal.update_interval }}"
 
 binary_sensor:
   - <<[]: !include ../shared/esp-binary-sensors.yaml

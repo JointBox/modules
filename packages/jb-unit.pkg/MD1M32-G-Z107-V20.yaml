@@ -147,7 +147,7 @@ api:
   password: '{{ pkg.params.api.api_key }}'
   encryption:
     key: '{{ pkg.params.api.encryption_key }}'
-  reboot_timeout: 1h
+  reboot_timeout: '{{ pkg.params.api.reboot_timeout }}'
 
 # Dallas
 dallas:
