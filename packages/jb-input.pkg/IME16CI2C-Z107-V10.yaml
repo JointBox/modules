@@ -17,7 +17,7 @@ package:
             default: 0.2s
             validator: time_period
           multiclick_cooldown:
-            default: 0.5s
+            default: 0.3s
             validator: time_period
 
   variables:
