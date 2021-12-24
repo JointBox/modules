@@ -163,12 +163,12 @@ switch:
 sensor:
   - <<[]: !include ../shared/esp-sensors.yaml
   # Board temperature
-  - platform: dallas
-    index: 0
-    dallas_id: "{{ var.dallas_int }}"
-    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
-    name: "{{ pkg.params.identity.friendly_name }} board temperature"
-    id: "{{ var.board_temperature }}"
+#  - platform: dallas
+#    index: 0
+#    dallas_id: "{{ var.dallas_int }}"
+#    internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
+#    name: "{{ pkg.params.identity.friendly_name }} board temperature"
+#    id: "{{ var.board_temperature }}"
 
   # Voltage
   - platform: adc
