@@ -179,8 +179,9 @@ sensor:
     id: "{{ var.vin_voltage }}"
     filters:
       - calibrate_linear:
-          - 0.0 -> 0.0
+          - 0.0 -> 0.07
           - 0.54319 -> 8.640
+      - lambda: 'return (x > 0.08) ? x : 0.0;'
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
@@ -189,8 +190,9 @@ sensor:
     id: "{{ var.vdd_voltage }}"
     filters:
       - calibrate_linear:
-          - 0.0 -> 0.0
+          - 0.0 -> 0.07
           - 0.54319 -> 8.640
+      - lambda: 'return (x > 0.08) ? x : 0.0;'
   - platform: adc
     pin: GPIO35
     name: "{{ pkg.params.identity.friendly_name }} BAT voltage"
@@ -199,8 +201,9 @@ sensor:
     id: "{{ var.bat_voltage }}"
     filters:
       - calibrate_linear:
-          - 0.0 -> 0.0
+          - 0.0 -> 0.07
           - 0.54319 -> 8.640
+      - lambda: 'return (x > 0.08) ? x : 0.0;'
 
 binary_sensor:
   - <<[]: !include ../shared/esp-binary-sensors.yaml
