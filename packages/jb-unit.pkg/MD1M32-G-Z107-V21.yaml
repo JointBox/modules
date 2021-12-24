@@ -178,10 +178,10 @@ sensor:
     update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
     id: "{{ var.vin_voltage }}"
     filters:
-      - calibrate_linear:
-          - 0.0 -> 0.07
-          - 0.54319 -> 8.640
       - lambda: 'return (x > 0.08) ? x : 0.0;'
+      - calibrate_linear:
+          - 0.07 -> 0.0
+          - 0.54319 -> 8.640
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
@@ -190,7 +190,7 @@ sensor:
     id: "{{ var.vdd_voltage }}"
     filters:
       - calibrate_linear:
-          - 0.0 -> 0.07
+          - 0.07 -> 0.0
           - 0.54319 -> 8.640
       - lambda: 'return (x > 0.08) ? x : 0.0;'
   - platform: adc
@@ -201,7 +201,7 @@ sensor:
     id: "{{ var.bat_voltage }}"
     filters:
       - calibrate_linear:
-          - 0.0 -> 0.07
+          - 0.07 -> 0.0
           - 0.54319 -> 8.640
       - lambda: 'return (x > 0.08) ? x : 0.0;'
 
