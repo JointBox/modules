@@ -189,10 +189,10 @@ sensor:
     update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
     id: "{{ var.vdd_voltage }}"
     filters:
+      - lambda: 'return (x > 0.08) ? x : 0.0;'
       - calibrate_linear:
           - 0.07 -> 0.0
           - 0.54319 -> 8.640
-      - lambda: 'return (x > 0.08) ? x : 0.0;'
   - platform: adc
     pin: GPIO35
     name: "{{ pkg.params.identity.friendly_name }} BAT voltage"
@@ -200,10 +200,10 @@ sensor:
     update_interval: "{{ pkg.params.internal_sensors.bat_voltage.update_interval }}"
     id: "{{ var.bat_voltage }}"
     filters:
+      - lambda: 'return (x > 0.08) ? x : 0.0;'
       - calibrate_linear:
           - 0.07 -> 0.0
           - 0.54319 -> 8.640
-      - lambda: 'return (x > 0.08) ? x : 0.0;'
 
 binary_sensor:
   - <<[]: !include ../shared/esp-binary-sensors.yaml
