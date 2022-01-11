@@ -115,6 +115,7 @@ logger:
 
 # Wi-Fi Configuration
 wifi:
+  ~if: 'pkg.params.wifi.enable'
   ssid: '{{pkg.params.wifi.ssid}}'
   password: '{{pkg.params.wifi.password}}'
   domain: '{{pkg.params.identity.domain_name}}'
@@ -122,25 +123,27 @@ wifi:
 
 # NTP Configuration
 time:
-  - ~if: "pkg.params.time == 'sntp'"
-    platform: sntp
-    id: "{{ var.time }}"
-    timezone: "{{ pkg.params.timezone }}"
-    servers: "{{ pkg.params.ntp_servers }}"
-  - ~if: "pkg.params.time == 'hass'"
-    platform: homeassistant
-    id: "{{ var.time }}"
-    timezone: "{{ pkg.params.timezone }}"
+  ~if: "pkg.params.wifi.enable"
+  ~then:
+    - ~if: "pkg.params.time == 'sntp'"
+      platform: sntp
+      id: "{{ var.time }}"
+      timezone: "{{ pkg.params.timezone }}"
+      servers: "{{ pkg.params.ntp_servers }}"
+    - ~if: "pkg.params.time == 'hass'"
+      platform: homeassistant
+      id: "{{ var.time }}"
+      timezone: "{{ pkg.params.timezone }}"
 
 # Enable Over the Air updates
 ota:
-  ~if: "pkg.params.ota.enable"
+  ~if: "pkg.params.ota.enable and pkg.params.wifi.enable"
   safe_mode: True
   password: '{{ pkg.params.ota.password }}'
 
 # Enable Home Assistant API
 api:
-  ~if: "pkg.params.api.enable"
+  ~if: "pkg.params.api.enable and pkg.params.wifi.enable"
   password: '{{ pkg.params.api.api_key }}'
   encryption:
     key: '{{ pkg.params.api.encryption_key }}'

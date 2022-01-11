@@ -28,7 +28,6 @@ package:
   variables:
     hub_id: '{{ pkg.instance_name + "_hub" }}'
     channel_in_prefix: '{{ pkg.params.input_prefix|default(pkg.instance_name + "_") }}'
-
   export:
     - hub_id
     - name: channel_in_prefix
