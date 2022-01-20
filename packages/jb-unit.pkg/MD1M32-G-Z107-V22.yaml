@@ -148,11 +148,11 @@ api:
 
 # Dallas
 dallas:
-#  - pin: GPIO2
-#    id: "{{ var.dallas_int }}"
-#    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
+  - pin: GPIO32
+    id: "{{ var.dallas_int }}"
+    update_interval: "{{ pkg.params.internal_sensors.board_temperature.update_interval }}"
   - ~if: "pkg.params.enable_dallas"
-    pin: GPIO32
+    pin: GPIO33
     id: "{{ var.dallas_ext }}"
     update_interval: "{{ pkg.params.dallas_update_interval }}"
 
