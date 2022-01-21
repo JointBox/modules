@@ -180,12 +180,33 @@ package:
                           humidity:
                             default: { enable: true }
                             validator: optional_sensor
+          buzzer:
+            default: { enable: true }
+            validator:
+              name: combine
+              args:
+                - optional
+                - name: package_params
+                  args:
+                    frequency:
+                      required: true
+                      default: 2700Hz
+                      validator: frequency
+          rtttl:
+            default: { enable: true }
+            validator: optional
+          modbus:
+            default: { enable: false }
+            validator: optional
   variables:
     i2c_bus: "{{ pkg.params.identity.id_prefix }}i2c0"
     dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
     dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
     ir_receiver: '{{ pkg.params.identity.id_prefix}}ir_receiver'
     ir_emitter: '{{ pkg.params.identity.id_prefix}}ir_emitter'
+    buzzer_rtttl: '{{ pkg.params.identity.id_prefix}}buzzer_rtttl'
+    buzzer: '{{ pkg.params.identity.id_prefix}}buzzer'
+    modbus: '{{ pkg.params.identity.id_prefix}}modbus0'
     illuminance: '{{ pkg.params.identity.id_prefix}}illuminance'
     flash_button: '{{ pkg.params.identity.id_prefix}}flash_button'
     jointbox_device_version: 'SENCHTPLM-RS-V10'
@@ -227,7 +248,10 @@ esphome:
   #  comment: "{{ pkg.params.identity.comment|default(null) }}"
   project:
     name: jointbox.ceiling-sensor
-    version: "v1.0"
+    version: "v1.1"
+  on_boot:
+    # Turn on green led on boot
+    - output.turn_on: led_g
 
 globals:
   - id: last_motion_time
@@ -562,3 +586,37 @@ remote_transmitter:
     id: "{{ var.ir_emitter }}"
     pin: GPIO12
     carrier_duty_percent: 50%
+
+output:
+  - platform: ledc
+    ~if: 'pkg.params.features.buzzer.enable or pkg.params.features.rtttl.enable'
+    pin: GPIO26
+    id: '{{ var.buzzer }}'
+  - platform: gpio
+    pin: GPIO18
+    id: led_b
+    inverted: false
+  - platform: gpio
+    pin: GPIO23
+    id: led_g
+    inverted: false
+  - platform: gpio
+    pin: GPIO19
+    id: led_r
+    inverted: false
+
+rtttl:
+  ~if: 'pkg.params.features.rtttl.enable'
+  id: '{{ var.buzzer_rtttl }}'
+  output: '{{ var.buzzer }}'
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            wifi.connected:
+          then:
+            - output.turn_on: led_b
+          else:
+            - output.turn_off: led_b
