@@ -362,6 +362,7 @@ sensor:
     internal: "{{ not pkg.params.internal_sensors.board_temperature.expose }}"
     name: "{{ pkg.params.identity.friendly_name }} board temperature"
     id: "{{ var.board_temperature }}"
+
   # Voltage
   - platform: adc
     pin: GPIO34
@@ -369,22 +370,21 @@ sensor:
     internal: "{{ not pkg.params.internal_sensors.vin_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vin_voltage.update_interval }}"
     id: "{{ var.vin_voltage }}"
-    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.321 -> 5.02
+          - 0.54319 -> 8.640
   - platform: adc
     pin: GPIO39
     name: "{{ pkg.params.identity.friendly_name }} VDD voltage"
     internal: "{{ not pkg.params.internal_sensors.vdd_voltage.expose }}"
     update_interval: "{{ pkg.params.internal_sensors.vdd_voltage.update_interval }}"
     id: "{{ var.vdd_voltage }}"
-    attenuation: 0db
     filters:
       - calibrate_linear:
           - 0.0 -> 0.0
-          - 0.321 -> 5.02
+          - 0.54319 -> 8.640
+
   # Illuminance
   - platform: adc
     ~if: "pkg.params.features.illuminance.enable"
@@ -393,7 +393,7 @@ sensor:
     name: "{{ pkg.params.identity.friendly_name }} Illuminance ADC"
     update_interval: "{% if pkg.params.features.illuminance.smoothen %}{{ pkg.params.features.illuminance.update_interval.total_milliseconds / 3 }}ms{% else %}{{ pkg.params.features.illuminance.update_interval }}{% endif %}"
     internal: true
-    attenuation: 11db
+    attenuation: 0db
 
   - platform: resistance
     ~if: "pkg.params.features.illuminance.enable"
@@ -410,8 +410,9 @@ sensor:
     accuracy_decimals: 0
     filters:
       - calibrate_linear:
-          - 13000 -> 0
-          - 8500 -> 100
+          - 4595 -> 0
+          - 232 -> 100
+      - lambda: 'return (x > 0.1) ? x : 0.0;'
       - median:
           ~if: "pkg.params.features.illuminance.smoothen"
           window_size: 3
