@@ -11,6 +11,9 @@ package:
     enable_uart:
       default: false
       validator: boolean
+    enable_can:
+      default: false
+      validator: boolean
     enable_dallas:
       default: false
       validator: boolean
@@ -28,6 +31,9 @@ package:
     i2c_freq:
       default: 100kHz
       validator: frequency
+    can_bitrate:
+      default: 50kbps
+      validator: string
     uart_baudrate:
       default: 9600
       validator: integer
@@ -101,6 +107,16 @@ uart:
     tx_pin: GPIO4
     baud_rate: "{{ pkg.params.uart_baudrate }}"
     stop_bits: 1
+
+# CAN Bus
+canbus:
+  - ~if: "pkg.params.enable_can"
+    id: can0
+    platform: esp32_can
+    tx_pin: GPIO3     # We do not know why RX-TX are swapped when it runs on uart0...
+    rx_pin: GPIO1
+    can_id: 0x01
+    bit_rate: '{{ pkg.params.can_bitrate }}'
 
 spi:
   - ~if: "pkg.params.enable_spi"

@@ -182,6 +182,17 @@ package:
           modbus:
             default: { enable: false }
             validator: optional
+          can:
+            default: { enable: false }
+            validator:
+              name: combine
+              args:
+                - optional
+                - name: package_params
+                  args:
+                    bit_rate:
+                      required: true
+                      default: 50kbps
           sensor_mhz19:
             default: { enable: false, expose: true, update_interval: 5m }
             validator: sensor & optional & polling
@@ -194,6 +205,7 @@ package:
     buzzer_rtttl: '{{ pkg.params.identity.id_prefix}}buzzer_rtttl'
     buzzer: '{{ pkg.params.identity.id_prefix}}buzzer'
     modbus: '{{ pkg.params.identity.id_prefix}}modbus0'
+    canbus: '{{ pkg.params.identity.id_prefix}}can0'
     illuminance: '{{ pkg.params.identity.id_prefix}}illuminance'
     flash_button: '{{ pkg.params.identity.id_prefix}}flash_button'
     jointbox_device_version: 'SENWHTPLC-CR-V30'
@@ -314,6 +326,14 @@ modbus:
   ~if: 'pkg.params.features.modbus.enable'
   id: '{{ var.modbus }}'
   uart_id: uart_modbus
+
+canbus:
+  - platform: esp32_can
+    ~if: 'pkg.params.features.can.enable'
+    id: '{{ var.canbus }}'
+    tx_pin: GPIO17
+    rx_pin: GPIO16
+    bit_rate: '{{ pkg.params.features.can.bit_rate }}'
 
 switch:
   - ~if: "pkg.params.enable_reset_switch"
@@ -586,14 +606,20 @@ output:
     id: led_g
     inverted: false
   - platform: gpio
-    pin: GPIO19
     id: led_r
+    pin: GPIO19
     inverted: false
 
 rtttl:
   ~if: 'pkg.params.features.rtttl.enable'
   id: '{{ var.buzzer_rtttl }}'
   output: '{{ var.buzzer }}'
+
+esp32_improv:
+  authorizer: "{{ var.flash_button }}"
+  status_indicator: led_r
+  authorized_duration: 1min
+  identify_duration: 10s
 
 interval:
   - interval: 1s
