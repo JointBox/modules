@@ -143,6 +143,7 @@ spi:
 
 # Enable logging
 logger:
+  baud_rate: "{% if pkg.params.enable_can %}0{% else %}115200{% endif %}"
   level: "{{pkg.params.log_level|default('INFO')}}"
 
 # Wi-Fi Configuration
@@ -155,6 +156,7 @@ wifi:
 
 # Ethernet
 ethernet:
+  ~if: 'pkg.params.ethernet.enable'
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18

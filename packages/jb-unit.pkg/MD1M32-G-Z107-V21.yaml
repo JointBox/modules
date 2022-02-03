@@ -139,6 +139,7 @@ wifi:
 
 # Ethernet
 ethernet:
+  ~if: 'pkg.params.ethernet.enable'
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
