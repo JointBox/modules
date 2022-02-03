@@ -13,7 +13,7 @@ package:
         args:
           clock_mode:
             required: true
-            default: "osc"
+            default: "esp"
             validator:
               name: one_of
               args: [ esp, osc ]
