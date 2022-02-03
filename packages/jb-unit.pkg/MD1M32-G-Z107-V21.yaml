@@ -5,6 +5,21 @@ package:
   tags: [ jointbox, jb-module ]
   params:
     <<: !include ../shared/esp-params.yaml
+    ethernet:
+      required: true
+      default: { enable: false }
+      validator:
+        name: package_params
+        args:
+          clock_mode:
+            required: true
+            default: "osc"
+            validator:
+              name: one_of
+              args: [ esp, osc ]
+          enable:
+            validator: boolean
+            default: false
     enable_spi:
       default: false
       validator: boolean
@@ -70,6 +85,7 @@ package:
     board_temperature: '{{ pkg.params.identity.id_prefix }}board_temperature'
     jointbox_unit_version: 'MD1M32-G-Z107-V21'
     jointbox_device_str: 'JB Unit, {{ var.jointbox_unit_version }}'
+    network_enabled: '{{ pkg.params.wifi.enable or pkg.params.ethernet.enable }}'
 
   export: [ time, i2c_bus, spi_bus, spi_cs_pin, board_temperature, vin_voltage, vdd_voltage, bat_voltage,
             restart_switch, uptime, wifi_signal, connection_status, uart_ext ]
@@ -121,9 +137,18 @@ wifi:
   domain: '{{pkg.params.identity.domain_name}}'
   fast_connect: true
 
+# Ethernet
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: "{% if pkg.params.ethernet.clock_mode == 'esp' %}GPIO0_OUT{% else %}GPIO0_IN{% endif %}"
+  phy_addr: 1
+  power_pin: GPIO02
+
 # NTP Configuration
 time:
-  ~if: "pkg.params.wifi.enable"
+  ~if: "var.network_enabled"
   ~then:
     - ~if: "pkg.params.time == 'sntp'"
       platform: sntp
@@ -137,13 +162,13 @@ time:
 
 # Enable Over the Air updates
 ota:
-  ~if: "pkg.params.ota.enable and pkg.params.wifi.enable"
+  ~if: "pkg.params.ota.enable and var.network_enabled"
   safe_mode: True
   password: '{{ pkg.params.ota.password }}'
 
 # Enable Home Assistant API
 api:
-  ~if: "pkg.params.api.enable and pkg.params.wifi.enable"
+  ~if: "pkg.params.api.enable and var.network_enabled"
   password: '{{ pkg.params.api.api_key }}'
   encryption:
     key: '{{ pkg.params.api.encryption_key }}'

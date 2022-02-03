@@ -3,11 +3,18 @@ package:
   author: Jointbox Team <support@jointbox.io>
   license: MIT
   tags: [ jointbox, jb-module ]
+  params:
+    clock_mode:
+      required: true
+      default: "osc"
+      validator:
+        name: one_of
+        args: [esp, osc]
 
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
-  clk_mode: GPIO0_IN
+  clk_mode: "{% if pkg.params.clock_mode == 'esp' %}GPIO0_OUT{% else %}GPIO0_IN{% endif %}"
   phy_addr: 1
   power_pin: GPIO02

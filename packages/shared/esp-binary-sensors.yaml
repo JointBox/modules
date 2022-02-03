@@ -1,5 +1,5 @@
 # Connection status.
-- ~if: "pkg.params.internal_sensors.connection_status.enable and pkg.params.wifi.enable"
+- ~if: "pkg.params.internal_sensors.connection_status.enable and var.network_enabled"
   platform: status
   id: "{{ var.connection_status }}"
   internal: "{{ not pkg.params.internal_sensors.connection_status.expose }}"

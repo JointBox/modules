@@ -197,6 +197,7 @@ package:
             default: { enable: false, expose: true, update_interval: 5m }
             validator: sensor & optional & polling
   variables:
+    network_enabled: '{{ pkg.params.wifi.enable }}'
     i2c_bus: "{{ pkg.params.identity.id_prefix }}i2c0"
     dallas_int: '{{ pkg.params.identity.id_prefix}}dallas_internal'
     dallas_ext: '{{ pkg.params.identity.id_prefix}}dallas_ext'
