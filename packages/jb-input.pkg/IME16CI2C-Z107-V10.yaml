@@ -32,6 +32,8 @@ package:
       - OFF for at most 0.3s
       - ON for at most 1s
       - OFF for at least 0.2s
+    native_click_min: 50ms
+    native_click_max: 0.8s
 
   macros:
     switch:
@@ -45,7 +47,16 @@ package:
         expose:
           default: false
           validator: boolean
+        inverted:
+          default: false
+          validator: boolean
+        on_press:
+          required: false
+          validator: actions_with_fallback
         on_click:
+          required: false
+          validator: actions_with_fallback
+        on_click_timing:
           required: false
           validator: actions_with_fallback
         on_long_press:
@@ -58,15 +69,29 @@ package:
         pin:
           mcp23xxx: "{{ var.hub_id }}"
           number: "{{ macro.params.input_num }}"
-          inverted: true
-        on_multi_click:
+          inverted: "{{ macro.params.inverted }}"
+        on_press:
+          - ~if: "macro.params.on_press is defined"
+            then:
+              ~macro: "jbstd.macros.action_with_fallback"
+              default_action: "{{ macro.params.on_press.default }}"
+              fallback_action: "{{ macro.params.on_press.when_online }}"
+        on_click:
           - ~if: "macro.params.on_click is defined"
-            timing: "{{ var.single_click_timing }}"
-            invalid_cooldown: "{{ pkg.params.timing.multiclick_cooldown }}"
+            min_length: "{{ var.native_click_min }}"
+            max_length: "{{ var.native_click_max }}"
             then:
               ~macro: "jbstd.macros.action_with_fallback"
               default_action: "{{ macro.params.on_click.default }}"
               fallback_action: "{{ macro.params.on_click.when_online }}"
+        on_multi_click:
+          - ~if: "macro.params.on_click_timing is defined"
+            timing: "{{ var.single_click_timing }}"
+            invalid_cooldown: "{{ pkg.params.timing.multiclick_cooldown }}"
+            then:
+              ~macro: "jbstd.macros.action_with_fallback"
+              default_action: "{{ macro.params.on_click_timing.default }}"
+              fallback_action: "{{ macro.params.on_click_timing.when_online }}"
           - ~if: "macro.params.on_long_press is defined"
             timing: "{{ var.long_press_timing }}"
             invalid_cooldown: "{{ pkg.params.timing.multiclick_cooldown }}"
