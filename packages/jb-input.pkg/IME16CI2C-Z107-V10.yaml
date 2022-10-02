@@ -112,6 +112,9 @@ package:
           validator:
             name: int_range
             args: { min: 0, max: 15 }
+        inverted:
+          default: false
+          validator: boolean
         expose:
           default: true
           validator: boolean
@@ -129,7 +132,7 @@ package:
         pin:
           mcp23xxx: "{{ var.hub_id }}"
           number: "{{ macro.params.input_num }}"
-          inverted: true
+          inverted: "{{ macro.params.inverted }}"
         filters:
           - invert:
           - delayed_on_off: "{{ pkg.params.timing.debounce_interval }}"
