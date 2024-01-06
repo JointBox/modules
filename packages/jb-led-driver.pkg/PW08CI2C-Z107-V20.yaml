@@ -45,4 +45,5 @@ output:
     ~count: 'pkg.params.channels'
     platform: pca9685
     id: '{{ var.channel_out_prefix}}{{ loop.index }}'
+    pca9685_id: '{{ var.hub_id }}'
     channel: '{{ loop.index }}'
