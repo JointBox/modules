@@ -98,14 +98,17 @@ package:
 
 esphome:
   name: '{{pkg.params.identity.hostname}}'
-  platform: ESP32
-  board: wemos_d1_mini32
   build_path: './build/{{pkg.params.identity.hostname}}'
 #  comment: "{{ pkg.params.identity.comment|default(null) }}"
   project:
     name: jointbox.unit
-    version: "v2.1"
+    version: "v2.2"
 
+esp32:
+  board: wemos_d1_mini32
+  framework:
+    type: arduino
+    version: 2.0.6
 
 # I2C Bus
 i2c:
